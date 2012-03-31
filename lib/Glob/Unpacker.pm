@@ -1,14 +1,13 @@
 package Glib::Unpacker;
-use Moose;
 
+use Moose;
+use syntax 'method';
 use JSON;
 use Cond::Expr;
-use ZeroMQ;
+use ZeroMQ ':all';
 use Data::Dump 'pp';
-
-use Glob::Types(':all');
-
-with qw/MooseX::Runnable MooseX::Getopt/;
+use Glob::Types ':all';
+use namespace::autoclean;
 
 has ipc_path => (
     is => 'ro',
@@ -19,7 +18,6 @@ has ipc_path => (
 
 has gitter => (
     is => 'ro',
-    traits => ['NoGetopt'],
     isa => 'Glob::Git',
     required => 1,
     handles => [qw/
@@ -27,19 +25,29 @@ has gitter => (
     /],
 );
 
-sub run {
+has consumer => (
+    isa      => Consumer,
+    required => 1,
+    handles  => {
+        consume_payload => 'consume',
+    },
+);
+
+method run {
     my $ctx = ZeroMQ::Context->new;
     my $pullsock = $ctx->socket(ZMQ_PULL);
     $pullsock->connect($self->ipc_path);
     $pullsock->setsockopt(ZMQ_HWM, 4);
 
     while (1) {
-        my $payload = decode_json $pullsock->recv->data;
+        my $payload = $self->consume_payload;
+
         cond
             ($payload->{action} eq 'store_dist') { $self->gitify($payload->{dist}) }
-            otherwise {
-                die "unknown action in " . pp $payload;
-            };
-        1;
+            otherwise { die "unknown action in " . pp $payload };
     }
 }
+
+__PACKAGE__->meta->make_immutable;
+
+1;

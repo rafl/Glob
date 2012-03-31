@@ -4,6 +4,7 @@ use MooseX::Types::Moose(':all');
 use MooseX::Types -declare => [qw/
     GlobRoot
     Publisher
+    Consumer
     IPCPath
 /];
 
@@ -20,5 +21,6 @@ subtype IPCPath,
     where { m#ipc://.+# };
 
 role_type Publisher, { class => 'Glob::Publisher' };
+role_type Consumer,  { class => 'Glob::Consumer'  };
 
 1;
