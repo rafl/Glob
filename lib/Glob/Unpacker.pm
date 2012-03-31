@@ -1,4 +1,4 @@
-package Glib::Unpacker;
+package Glob::Unpacker;
 
 use Moose;
 use syntax 'method';
